@@ -11,11 +11,12 @@ from supabase import create_client
 
 
 def render_html(content, unsafe_allow_html=True):
-    """Render HTML safely without accidental Markdown code blocks."""
-    st.markdown(
-        textwrap.dedent(content).strip(),
-        unsafe_allow_html=unsafe_allow_html,
-    )
+    """
+    Render HTML directamente con el motor nativo de Streamlit.
+    Se conserva unsafe_allow_html por compatibilidad con el código existente.
+    """
+    st.html(textwrap.dedent(content).strip())
+
 
 # =========================================================
 # CONFIGURACIÓN GENERAL
