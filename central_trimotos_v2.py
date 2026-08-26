@@ -496,11 +496,13 @@ def obtener_nombre_chofer(cedula, choferes):
 # =========================================================
 ESTADO_NUEVA = "🟡 Nueva"
 ESTADO_ACEPTADA = "🔵 Aceptada"
+ESTADO_EN_CAMINO = "🟠 En camino"
+ESTADO_EN_ENTREGA = "🟣 En entrega"
 ESTADO_RECHAZADA = "🔴 Rechazada"
 ESTADO_ENTREGADA = "🟢 Entregado"
 ESTADO_LEGACY = "🟡 En Ruta"  # Compatibilidad con viajes creados antes del nuevo flujo.
 
-ESTADOS_ACTIVOS = {ESTADO_NUEVA, ESTADO_ACEPTADA, ESTADO_LEGACY}
+ESTADOS_ACTIVOS = {ESTADO_NUEVA, ESTADO_ACEPTADA, ESTADO_EN_CAMINO, ESTADO_EN_ENTREGA, ESTADO_LEGACY}
 
 
 def es_viaje_activo(viaje):
@@ -510,7 +512,7 @@ def es_viaje_activo(viaje):
 def estado_clase(estatus):
     if estatus == ESTADO_ENTREGADA:
         return "done"
-    if estatus == ESTADO_ACEPTADA:
+    if estatus in {ESTADO_ACEPTADA, ESTADO_EN_CAMINO, ESTADO_EN_ENTREGA}:
         return "accepted"
     if estatus == ESTADO_RECHAZADA:
         return "rejected"
@@ -941,6 +943,10 @@ elif menu == "📦 Despachos":
                 st.caption("⏳ Esperando aceptación del chofer.")
             elif v.get("estatus") == ESTADO_ACEPTADA:
                 st.caption("✅ Carrera aceptada por el chofer.")
+            elif v.get("estatus") == ESTADO_EN_CAMINO:
+                st.caption("🟠 El chofer está en camino al origen.")
+            elif v.get("estatus") == ESTADO_EN_ENTREGA:
+                st.caption("🟣 El pedido está en proceso de entrega.")
             elif v.get("estatus") == ESTADO_LEGACY:
                 st.caption("🛵 Carrera activa creada con el flujo anterior.")
 
@@ -1093,7 +1099,7 @@ elif menu == "🗺️ Mapa en vivo":
 
     activos = [
         v for v in viajes
-        if v.get("estatus") in {ESTADO_ACEPTADA, ESTADO_LEGACY}
+        if v.get("estatus") in {ESTADO_ACEPTADA, ESTADO_EN_CAMINO, ESTADO_EN_ENTREGA, ESTADO_LEGACY}
     ]
 
     if activos:
@@ -1105,7 +1111,7 @@ elif menu == "🗺️ Mapa en vivo":
                 <div class="trip-card">
                     <div class="trip-top">
                         <div>
-                            <div class="trip-client">🟡 {v.get("comercio", "Particular")}</div>
+                            <div class="trip-client">{v.get("estatus", "🟠 En camino")} · {v.get("comercio", "Particular")}</div>
                             <div class="trip-meta">🛵 {chofer}</div>
                         </div>
                         <div class="trip-price">${float(v.get("total", 0) or 0):.2f}</div>
