@@ -519,6 +519,28 @@ def estado_clase(estatus):
     return ""
 
 
+
+def agregar_marcador_gps(mapa, viaje, choferes_lista):
+    """Agrega al mapa la última ubicación GPS conocida del chofer."""
+    try:
+        lat = viaje.get("gps_latitude")
+        lon = viaje.get("gps_longitude")
+        if lat is None or lon is None:
+            return False
+        lat, lon = float(lat), float(lon)
+        chofer = obtener_nombre_chofer(viaje.get("chofer_cedula"), choferes_lista)
+        actualizado = viaje.get("gps_updated_at", "Sin hora")
+        folium.Marker(
+            [lat, lon],
+            tooltip=f"🛵 {chofer}",
+            popup=f"<b>🛵 {chofer}</b><br>📍 Ubicación actual<br>🕐 {actualizado}",
+            icon=folium.Icon(color="blue", icon="motorcycle", prefix="fa"),
+        ).add_to(mapa)
+        return True
+    except Exception:
+        return False
+
+
 # =========================================================
 # SIDEBAR
 # =========================================================
@@ -1237,6 +1259,16 @@ elif menu == "🗺️ Mapa en vivo":
             opacity=0.9,
         ).add_to(mapa)
 
+        gps_mostrado = False
+        viaje_gps_id = st.session_state.get("viaje_monitor_id")
+        if viaje_gps_id is not None:
+            viaje_gps = next(
+                (x for x in viajes if str(x.get("id")) == str(viaje_gps_id)),
+                None,
+            )
+            if viaje_gps:
+                gps_mostrado = agregar_marcador_gps(mapa, viaje_gps, choferes)
+
         st_folium(
             mapa,
             width=None,
@@ -1244,9 +1276,14 @@ elif menu == "🗺️ Mapa en vivo":
             use_container_width=True,
         )
 
+        if gps_mostrado:
+            st.caption("🔵 Última ubicación GPS recibida del chofer.")
+        else:
+            st.caption("📍 Aún no se ha recibido una ubicación GPS para esta carrera.")
+
         st.caption(
             "La ruta representa el recorrido planificado. "
-            "El punto GPS real del chofer se incorporará en una etapa posterior."
+            "El marcador azul muestra la última ubicación GPS enviada por el chofer."
         )
     else:
         st.info("Selecciona una carrera y carga su ruta para verla en el mapa.")
