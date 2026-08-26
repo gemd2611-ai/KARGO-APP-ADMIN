@@ -1,4 +1,5 @@
 import streamlit as st
+import textwrap
 import pandas as pd
 import requests
 import folium
@@ -6,6 +7,15 @@ from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
 from supabase import create_client
+
+
+
+def render_html(content, unsafe_allow_html=True):
+    """Render HTML safely without accidental Markdown code blocks."""
+    st.markdown(
+        textwrap.dedent(content).strip(),
+        unsafe_allow_html=unsafe_allow_html,
+    )
 
 # =========================================================
 # CONFIGURACIÓN GENERAL
@@ -20,7 +30,7 @@ st.set_page_config(
 # =========================================================
 # ESTILOS - CENTRAL MODERNA
 # =========================================================
-st.markdown(
+render_html(
     """
     <style>
     /* ---------- BASE ---------- */
@@ -480,7 +490,7 @@ def estado_clase(estatus):
 # SIDEBAR
 # =========================================================
 with st.sidebar:
-    st.markdown(
+    render_html(
         """
         <div class="brand-box">
             <div class="brand-icon">🛵</div>
@@ -491,7 +501,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div class="sidebar-section">Operación</div>', unsafe_allow_html=True)
+    render_html('<div class="sidebar-section">Operación</div>', unsafe_allow_html=True)
 
     menu = st.radio(
         "Navegación",
@@ -507,7 +517,7 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    st.markdown(
+    render_html(
         f"""
         <div class="sidebar-user">
             <span class="sidebar-avatar">GM</span>
@@ -555,9 +565,9 @@ for v in viajes:
 # 🏠 INICIO
 # =========================================================
 if menu == "🏠 Inicio":
-    st.markdown('<div class="page-kicker">CENTRAL DE DESPACHO</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">¡Hola, Gabriel! 👋</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">CENTRAL DE DESPACHO</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">¡Hola, Gabriel! 👋</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Aquí tienes el resumen de la operación de Trimotos Delivery.</div>',
         unsafe_allow_html=True,
     )
@@ -566,7 +576,7 @@ if menu == "🏠 Inicio":
     k1, k2, k3, k4 = st.columns(4)
 
     with k1:
-        st.markdown(
+        render_html(
             f"""
             <div class="kpi-card">
                 <div class="kpi-icon">📦</div>
@@ -578,7 +588,7 @@ if menu == "🏠 Inicio":
         )
 
     with k2:
-        st.markdown(
+        render_html(
             f"""
             <div class="kpi-card">
                 <div class="kpi-icon">🛵</div>
@@ -590,7 +600,7 @@ if menu == "🏠 Inicio":
         )
 
     with k3:
-        st.markdown(
+        render_html(
             f"""
             <div class="kpi-card">
                 <div class="kpi-icon">✅</div>
@@ -602,7 +612,7 @@ if menu == "🏠 Inicio":
         )
 
     with k4:
-        st.markdown(
+        render_html(
             f"""
             <div class="kpi-card">
                 <div class="kpi-icon">💰</div>
@@ -613,7 +623,7 @@ if menu == "🏠 Inicio":
             unsafe_allow_html=True,
         )
 
-    st.markdown('<div class="section-title">Despachos recientes</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Despachos recientes</div>', unsafe_allow_html=True)
 
     recientes = sorted(
         viajes,
@@ -629,7 +639,7 @@ if menu == "🏠 Inicio":
             clase = estado_clase(estatus)
             chofer = obtener_nombre_chofer(v.get("chofer_cedula"), choferes)
 
-            st.markdown(
+            render_html(
                 f"""
                 <div class="trip-card">
                     <div class="trip-top">
@@ -648,6 +658,7 @@ if menu == "🏠 Inicio":
                             </div>
                         </div>
                     </div>
+
                     <div class="route-line">
                         📍 <b>{v.get("origen", "N/A")}</b>
                         &nbsp; → &nbsp;
@@ -658,7 +669,7 @@ if menu == "🏠 Inicio":
                 unsafe_allow_html=True,
             )
 
-    st.markdown('<div class="section-title">Acciones rápidas</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Acciones rápidas</div>', unsafe_allow_html=True)
 
     a1, a2, a3 = st.columns(3)
 
@@ -682,9 +693,9 @@ if menu == "🏠 Inicio":
 # 📦 DESPACHOS
 # =========================================================
 elif menu == "📦 Despachos":
-    st.markdown('<div class="page-kicker">OPERACIÓN</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Nuevo despacho 📦</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">OPERACIÓN</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Nuevo despacho 📦</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Cotiza una ruta y asigna el servicio a un chofer.</div>',
         unsafe_allow_html=True,
     )
@@ -692,7 +703,7 @@ elif menu == "📦 Despachos":
     left, right = st.columns([1.05, 0.95], gap="large")
 
     with left:
-        st.markdown(
+        render_html(
             '<div class="info-box-title">Información del servicio</div>',
             unsafe_allow_html=True,
         )
@@ -747,7 +758,7 @@ elif menu == "📦 Despachos":
                     )
 
     with right:
-        st.markdown(
+        render_html(
             '<div class="info-box-title">Resumen de cotización</div>',
             unsafe_allow_html=True,
         )
@@ -769,7 +780,7 @@ elif menu == "📦 Despachos":
             with c2:
                 st.metric("Total carrera", f"${total:.2f}")
 
-            st.markdown("---")
+            render_html("---")
 
             st.write("**Asignar chofer**")
 
@@ -824,7 +835,7 @@ elif menu == "📦 Despachos":
 
     # MAPA
     if "ruta_activa" in st.session_state:
-        st.markdown('<div class="section-title">Vista de ruta</div>', unsafe_allow_html=True)
+        render_html('<div class="section-title">Vista de ruta</div>', unsafe_allow_html=True)
 
         r = st.session_state.ruta_activa
 
@@ -863,7 +874,7 @@ elif menu == "📦 Despachos":
         )
 
     # DESPACHOS ACTUALES
-    st.markdown('<div class="section-title">Despachos pendientes</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Despachos pendientes</div>', unsafe_allow_html=True)
 
     if not viajes_pendientes:
         st.info("No existen despachos pendientes.")
@@ -875,7 +886,7 @@ elif menu == "📦 Despachos":
         ):
             chofer = obtener_nombre_chofer(v.get("chofer_cedula"), choferes)
 
-            st.markdown(
+            render_html(
                 f"""
                 <div class="trip-card">
                     <div class="trip-top">
@@ -900,9 +911,9 @@ elif menu == "📦 Despachos":
 # 🛵 CHOFERES
 # =========================================================
 elif menu == "🛵 Choferes":
-    st.markdown('<div class="page-kicker">EQUIPO</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Choferes 🛵</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">EQUIPO</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Choferes 🛵</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Gestiona los conductores registrados en la operación.</div>',
         unsafe_allow_html=True,
     )
@@ -953,7 +964,7 @@ elif menu == "🛵 Choferes":
                     except Exception as e:
                         st.error(f"No fue posible guardar el chofer: {e}")
 
-    st.markdown('<div class="section-title">Choferes registrados</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Choferes registrados</div>', unsafe_allow_html=True)
 
     if not choferes:
         st.info("No hay choferes registrados.")
@@ -968,7 +979,7 @@ elif menu == "🛵 Choferes":
                     if v.get("chofer_cedula") == c.get("cedula")
                 ]
 
-                st.markdown(
+                render_html(
                     f"""
                     <div class="driver-card">
                         <div class="online-dot">● ACTIVO EN SISTEMA</div>
@@ -994,9 +1005,9 @@ elif menu == "🛵 Choferes":
 # 🗺️ MAPA EN VIVO
 # =========================================================
 elif menu == "🗺️ Mapa en vivo":
-    st.markdown('<div class="page-kicker">MONITOREO</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Mapa en vivo 🗺️</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">MONITOREO</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Mapa en vivo 🗺️</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Vista de los servicios registrados y sus rutas.</div>',
         unsafe_allow_html=True,
     )
@@ -1040,7 +1051,7 @@ elif menu == "🗺️ Mapa en vivo":
             "Calcula una ruta desde Despachos para visualizarla aquí."
         )
 
-    st.markdown('<div class="section-title">Estado de la operación</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Estado de la operación</div>', unsafe_allow_html=True)
 
     activos = [
         v for v in viajes
@@ -1051,7 +1062,7 @@ elif menu == "🗺️ Mapa en vivo":
         for v in activos:
             chofer = obtener_nombre_chofer(v.get("chofer_cedula"), choferes)
 
-            st.markdown(
+            render_html(
                 f"""
                 <div class="trip-card">
                     <div class="trip-top">
@@ -1076,9 +1087,9 @@ elif menu == "🗺️ Mapa en vivo":
 # 📸 ENTREGAS
 # =========================================================
 elif menu == "📸 Entregas":
-    st.markdown('<div class="page-kicker">COMPROBANTES</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Entregas 📸</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">COMPROBANTES</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Entregas 📸</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Consulta las entregas realizadas y sus comprobantes.</div>',
         unsafe_allow_html=True,
     )
@@ -1093,7 +1104,7 @@ elif menu == "📸 Entregas":
         ):
             chofer = obtener_nombre_chofer(v.get("chofer_cedula"), choferes)
 
-            st.markdown(
+            render_html(
                 f"""
                 <div class="trip-card">
                     <div class="trip-top">
@@ -1128,9 +1139,9 @@ elif menu == "📸 Entregas":
 # 📊 REPORTES
 # =========================================================
 elif menu == "📊 Reportes":
-    st.markdown('<div class="page-kicker">ANÁLISIS</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Reportes 📊</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">ANÁLISIS</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Reportes 📊</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Resumen de la operación registrada en Supabase.</div>',
         unsafe_allow_html=True,
     )
@@ -1167,7 +1178,7 @@ elif menu == "📊 Reportes":
     with r4:
         st.metric("Ingresos registrados", f"${ingreso_total:.2f}")
 
-    st.markdown('<div class="section-title">Detalle de viajes</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Detalle de viajes</div>', unsafe_allow_html=True)
 
     if viajes:
         filas = []
@@ -1213,14 +1224,14 @@ elif menu == "📊 Reportes":
 # ⚙️ CONFIGURACIÓN
 # =========================================================
 elif menu == "⚙️ Configuración":
-    st.markdown('<div class="page-kicker">SISTEMA</div>', unsafe_allow_html=True)
-    st.markdown('<div class="page-title">Configuración ⚙️</div>', unsafe_allow_html=True)
-    st.markdown(
+    render_html('<div class="page-kicker">SISTEMA</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Configuración ⚙️</div>', unsafe_allow_html=True)
+    render_html(
         '<div class="page-subtitle">Parámetros básicos de la Central de Despacho.</div>',
         unsafe_allow_html=True,
     )
 
-    st.markdown(
+    render_html(
         """
         <div class="info-box">
             <div class="info-box-title">💰 Fórmula actual de tarifa</div>
@@ -1239,7 +1250,7 @@ elif menu == "⚙️ Configuración":
         "desde esta pantalla sin tocar Python."
     )
 
-    st.markdown(
+    render_html(
         """
         <div class="info-box">
             <div class="info-box-title">🔐 Seguridad</div>
@@ -1254,7 +1265,7 @@ elif menu == "⚙️ Configuración":
         unsafe_allow_html=True,
     )
 
-    st.markdown(
+    render_html(
         """
         <div class="info-box">
             <div class="info-box-title">🛵 Trimotos Delivery</div>
