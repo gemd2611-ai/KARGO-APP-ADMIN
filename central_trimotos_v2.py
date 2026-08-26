@@ -1046,85 +1046,210 @@ elif menu == "🛵 Choferes":
 
 
 # =========================================================
-# 🗺️ MAPA EN VIVO
+# 🗺️ MONITOREO EN VIVO
 # =========================================================
 elif menu == "🗺️ Mapa en vivo":
     render_html('<div class="page-kicker">MONITOREO</div>', unsafe_allow_html=True)
-    render_html('<div class="page-title">Mapa en vivo 🗺️</div>', unsafe_allow_html=True)
+    render_html('<div class="page-title">Operación en vivo 🗺️</div>', unsafe_allow_html=True)
     render_html(
-        '<div class="page-subtitle">Vista de los servicios registrados y sus rutas.</div>',
+        '<div class="page-subtitle">Controla el estado de cada carrera y actualiza la operación desde un solo lugar.</div>',
         unsafe_allow_html=True,
     )
 
-    if "ruta_activa" in st.session_state:
-        r = st.session_state.ruta_activa
-
-        mapa = folium.Map(
-            location=r["orig"],
-            zoom_start=12,
-            tiles="CartoDB positron",
-        )
-
-        folium.Marker(
-            r["orig"],
-            tooltip="Origen",
-            icon=folium.Icon(color="green"),
-        ).add_to(mapa)
-
-        folium.Marker(
-            r["dest"],
-            tooltip="Destino",
-            icon=folium.Icon(color="red"),
-        ).add_to(mapa)
-
-        folium.PolyLine(
-            r["puntos"],
-            color="#35CDB0",
-            weight=6,
-        ).add_to(mapa)
-
-        st_folium(mapa, width=None, height=600, use_container_width=True)
-
-        st.caption(
-            "Actualmente el mapa muestra la última ruta calculada. "
-            "El seguimiento GPS de choferes puede agregarse en una siguiente etapa."
-        )
-    else:
-        st.info(
-            "No hay una ruta activa en esta sesión. "
-            "Calcula una ruta desde Despachos para visualizarla aquí."
-        )
-
-    render_html('<div class="section-title">Estado de la operación</div>', unsafe_allow_html=True)
+    top_left, top_right = st.columns([1, 1])
+    with top_left:
+        st.metric("🚚 Servicios activos", len(viajes_pendientes))
+    with top_right:
+        if st.button("🔄 Actualizar monitoreo", use_container_width=True, type="primary"):
+            limpiar_cache()
+            st.rerun()
 
     activos = [
         v for v in viajes
-        if v.get("estatus") in {ESTADO_ACEPTADA, ESTADO_EN_CAMINO, ESTADO_EN_ENTREGA, ESTADO_LEGACY}
+        if v.get("estatus") in ESTADOS_ACTIVOS
     ]
 
-    if activos:
-        for v in activos:
+    # -------------------------
+    # TABLERO POR ESTADO
+    # -------------------------
+    render_html('<div class="section-title">Tablero de operación</div>', unsafe_allow_html=True)
+
+    estados_tablero = [
+        (ESTADO_NUEVA, "Nuevas"),
+        (ESTADO_ACEPTADA, "Aceptadas"),
+        (ESTADO_EN_CAMINO, "En camino"),
+        (ESTADO_EN_ENTREGA, "En entrega"),
+    ]
+
+    cols = st.columns(4)
+    for col, (estado, titulo) in zip(cols, estados_tablero):
+        cantidad = len([v for v in activos if v.get("estatus") == estado])
+        icono = estado.split(" ")[0]
+        with col:
+            render_html(
+                f"""
+                <div class="kpi-card" style="min-height:125px;">
+                    <div class="kpi-icon">{icono}</div>
+                    <div class="kpi-label">{titulo}</div>
+                    <div class="kpi-value">{cantidad}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # -------------------------
+    # CARRERAS EN SEGUIMIENTO
+    # -------------------------
+    render_html('<div class="section-title">Seguimiento de carreras</div>', unsafe_allow_html=True)
+
+    if not activos:
+        render_html(
+            """
+            <div class="empty-card">
+                <div class="empty-icon">🛵</div>
+                <div class="empty-title">No hay carreras activas</div>
+                <div class="empty-text">Cuando se cree o acepte un despacho aparecerá aquí.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        for v in sorted(
+            activos,
+            key=lambda x: str(x.get("fecha", "")),
+            reverse=True,
+        ):
+            estatus = v.get("estatus")
             chofer = obtener_nombre_chofer(v.get("chofer_cedula"), choferes)
+
+            if estatus == ESTADO_NUEVA:
+                progreso = 25
+                mensaje = "Esperando respuesta del chofer"
+            elif estatus == ESTADO_ACEPTADA:
+                progreso = 50
+                mensaje = "Carrera aceptada · pendiente de iniciar recorrido"
+            elif estatus == ESTADO_EN_CAMINO:
+                progreso = 75
+                mensaje = "Chofer en camino al punto de origen"
+            elif estatus == ESTADO_EN_ENTREGA:
+                progreso = 90
+                mensaje = "Entrega en proceso"
+            else:
+                progreso = 50
+                mensaje = "Carrera activa"
 
             render_html(
                 f"""
                 <div class="trip-card">
                     <div class="trip-top">
                         <div>
-                            <div class="trip-client">{v.get("estatus", "🟠 En camino")} · {v.get("comercio", "Particular")}</div>
-                            <div class="trip-meta">🛵 {chofer}</div>
+                            <div class="trip-client">🏢 {v.get("comercio", "Particular")}</div>
+                            <div class="trip-meta">🛵 {chofer} · {v.get("fecha", "")}</div>
                         </div>
-                        <div class="trip-price">${float(v.get("total", 0) or 0):.2f}</div>
+                        <div style="text-align:right;">
+                            <span class="status-pill {estado_clase(estatus)}">{estatus}</span>
+                            <div class="trip-price" style="margin-top:8px;">
+                                ${float(v.get("total", 0) or 0):.2f}
+                            </div>
+                        </div>
                     </div>
+
                     <div class="route-line">
-                        📍 {v.get("origen", "N/A")} → 🏁 {v.get("destino", "N/A")}
+                        📍 <b>{v.get("origen", "N/A")}</b>
+                        &nbsp; → &nbsp;
+                        🏁 <b>{v.get("destino", "N/A")}</b>
+                    </div>
+
+                    <div style="margin-top:14px;">
+                        <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7280;">
+                            <span>{mensaje}</span>
+                            <b>{progreso}%</b>
+                        </div>
+                        <div style="height:8px;background:#E5E7EB;border-radius:99px;margin-top:6px;overflow:hidden;">
+                            <div style="width:{progreso}%;height:100%;background:#35D0B1;border-radius:99px;"></div>
+                        </div>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
+
+    # -------------------------
+    # RUTA SELECCIONADA
+    # -------------------------
+    render_html('<div class="section-title">Ruta de seguimiento</div>', unsafe_allow_html=True)
+
+    if activos:
+        opciones_ruta = {
+            f'#{v.get("id")} · {v.get("comercio", "Particular")} · '
+            f'{obtener_nombre_chofer(v.get("chofer_cedula"), choferes)}': v
+            for v in activos
+        }
+
+        seleccion_ruta = st.selectbox(
+            "Selecciona una carrera para visualizar su ruta",
+            list(opciones_ruta.keys()),
+            key="monitor_ruta_seleccionada",
+        )
+
+        if st.button("🗺️ Cargar ruta de esta carrera", use_container_width=True):
+            viaje_ruta = opciones_ruta[seleccion_ruta]
+            with st.spinner("Calculando ruta..."):
+                ruta_monitor = obtener_datos_ruta(
+                    viaje_ruta.get("origen", ""),
+                    viaje_ruta.get("destino", ""),
+                )
+
+            if ruta_monitor:
+                st.session_state.ruta_monitor = ruta_monitor
+                st.session_state.viaje_monitor_id = viaje_ruta.get("id")
+                st.success("Ruta cargada correctamente.")
+            else:
+                st.error("No fue posible calcular la ruta de esta carrera.")
+
+    if st.session_state.get("ruta_monitor"):
+        r = st.session_state.ruta_monitor
+
+        mapa = folium.Map(
+            location=r["orig"],
+            zoom_start=13,
+            tiles="CartoDB positron",
+        )
+
+        folium.Marker(
+            r["orig"],
+            tooltip="Origen",
+            popup="📍 Origen",
+            icon=folium.Icon(color="green", icon="home"),
+        ).add_to(mapa)
+
+        folium.Marker(
+            r["dest"],
+            tooltip="Destino",
+            popup="🏁 Destino",
+            icon=folium.Icon(color="red", icon="flag"),
+        ).add_to(mapa)
+
+        folium.PolyLine(
+            r["puntos"],
+            color="#35D0B1",
+            weight=6,
+            opacity=0.9,
+        ).add_to(mapa)
+
+        st_folium(
+            mapa,
+            width=None,
+            height=560,
+            use_container_width=True,
+        )
+
+        st.caption(
+            "La ruta representa el recorrido planificado. "
+            "El punto GPS real del chofer se incorporará en una etapa posterior."
+        )
     else:
-        st.success("No hay servicios pendientes en este momento.")
+        st.info("Selecciona una carrera y carga su ruta para verla en el mapa.")
 
 
 # =========================================================
