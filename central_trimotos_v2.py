@@ -249,6 +249,16 @@ render_html(
         color: #087F6D;
     }
 
+    .status-pill.accepted {
+        background: #EAF2FF;
+        color: #285EA8;
+    }
+
+    .status-pill.rejected {
+        background: #FDECEC;
+        color: #B42318;
+    }
+
     .route-line {
         color: #4B5563;
         font-size: 13px;
@@ -481,9 +491,29 @@ def obtener_nombre_chofer(cedula, choferes):
     return "Sin asignar"
 
 
+# =========================================================
+# ESTADOS DE DESPACHO
+# =========================================================
+ESTADO_NUEVA = "🟡 Nueva"
+ESTADO_ACEPTADA = "🔵 Aceptada"
+ESTADO_RECHAZADA = "🔴 Rechazada"
+ESTADO_ENTREGADA = "🟢 Entregado"
+ESTADO_LEGACY = "🟡 En Ruta"  # Compatibilidad con viajes creados antes del nuevo flujo.
+
+ESTADOS_ACTIVOS = {ESTADO_NUEVA, ESTADO_ACEPTADA, ESTADO_LEGACY}
+
+
+def es_viaje_activo(viaje):
+    return viaje.get("estatus") in ESTADOS_ACTIVOS
+
+
 def estado_clase(estatus):
-    if estatus == "🟢 Entregado":
+    if estatus == ESTADO_ENTREGADA:
         return "done"
+    if estatus == ESTADO_ACEPTADA:
+        return "accepted"
+    if estatus == ESTADO_RECHAZADA:
+        return "rejected"
     return ""
 
 
@@ -542,7 +572,7 @@ viajes = cargar_viajes()
 
 viajes_pendientes = [
     v for v in viajes
-    if v.get("estatus") == "🟡 En Ruta"
+    if es_viaje_activo(v)
 ]
 
 viajes_entregados = [
@@ -581,7 +611,7 @@ if menu == "🏠 Inicio":
             f"""
             <div class="kpi-card">
                 <div class="kpi-icon">📦</div>
-                <div class="kpi-label">Despachos pendientes</div>
+                <div class="kpi-label">Despachos en operación</div>
                 <div class="kpi-value">{len(viajes_pendientes)}</div>
             </div>
             """,
@@ -813,7 +843,7 @@ elif menu == "📦 Despachos":
                         "destino": datos.get("destino", destino),
                         "total": total,
                         "chofer_cedula": cedula_asig,
-                        "estatus": "🟡 En Ruta",
+                        "estatus": ESTADO_NUEVA,
                     }
 
                     try:
@@ -875,7 +905,7 @@ elif menu == "📦 Despachos":
         )
 
     # DESPACHOS ACTUALES
-    render_html('<div class="section-title">Despachos pendientes</div>', unsafe_allow_html=True)
+    render_html('<div class="section-title">Despachos en operación</div>', unsafe_allow_html=True)
 
     if not viajes_pendientes:
         st.info("No existen despachos pendientes.")
@@ -906,6 +936,13 @@ elif menu == "📦 Despachos":
                 """,
                 unsafe_allow_html=True,
             )
+
+            if v.get("estatus") == ESTADO_NUEVA:
+                st.caption("⏳ Esperando aceptación del chofer.")
+            elif v.get("estatus") == ESTADO_ACEPTADA:
+                st.caption("✅ Carrera aceptada por el chofer.")
+            elif v.get("estatus") == ESTADO_LEGACY:
+                st.caption("🛵 Carrera activa creada con el flujo anterior.")
 
 
 # =========================================================
@@ -1056,7 +1093,7 @@ elif menu == "🗺️ Mapa en vivo":
 
     activos = [
         v for v in viajes
-        if v.get("estatus") == "🟡 En Ruta"
+        if v.get("estatus") in {ESTADO_ACEPTADA, ESTADO_LEGACY}
     ]
 
     if activos:
