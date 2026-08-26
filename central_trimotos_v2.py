@@ -363,7 +363,7 @@ try:
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except Exception:
     SUPABASE_URL = "https://jlurdtdidymjzctryilh.supabase.co"
-    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsdXJkdGRpZHltanpjdHJ5aWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NTA5MjUsImV4cCI6MjEwMzMyNjkyNX0.ZaA_AwdoyAU-bt_rmby98ORfAkpvkLhX7XHdrK9D_zE"
+    SUPABASE_KEY = "PEGA_AQUI_TU_SUPABASE_ANON_KEY"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -648,7 +648,6 @@ if menu == "🏠 Inicio":
                             </div>
                         </div>
                     </div>
-
                     <div class="route-line">
                         📍 <b>{v.get("origen", "N/A")}</b>
                         &nbsp; → &nbsp;
